@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demopg.CustomResponse;
+import com.example.demopg.metadata.MetadataService;
 
 import jakarta.validation.Valid;
 
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 @RequestMapping("/api/v1/products")
 public class ProductController {
   ProductService productService;
+  MetadataService metadataService;
 
-  public ProductController(ProductService productService) {
+  public ProductController(ProductService productService, MetadataService metadataService) {
     this.productService = productService;
+    this.metadataService = metadataService;
   }
 
   @GetMapping
@@ -39,22 +42,22 @@ public class ProductController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<CustomResponse<Product>> getProduct(@PathVariable Integer id) {
-    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Get Product Detail", productService.getProduct(id)).toResponseEntity();
+  public ResponseEntity<CustomResponse<ProductDTO>> getProduct(@PathVariable Integer id) {
+    return productService.getProduct(id).toResponseEntity();
   }
   
   @PostMapping
-  public ResponseEntity<CustomResponse<Product>> createProduct(@Valid @RequestBody Product product) {
-    return productService.createProduct(product).toResponseEntity();
+  public ResponseEntity<CustomResponse<ProductDTO>> createProduct(@Valid @RequestBody ProductDTO productMeta) {
+    return productService.createProduct(productMeta).toResponseEntity();
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<CustomResponse<Product>> updateProduct(@PathVariable Integer id, @Valid @RequestBody Product product) {
+  public ResponseEntity<CustomResponse<ProductDTO>> updateProduct(@PathVariable Integer id, @Valid @RequestBody ProductDTO product) {
     return productService.updateProduct(id, product).toResponseEntity();
   }
 
   @DeleteMapping("/{id}")
   public ResponseEntity<CustomResponse<Product>> deleteProduct(@PathVariable Integer id) {
-    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Product Removed", productService.deleteProduct(id)).toResponseEntity();
+    return productService.deleteProduct(id).toResponseEntity();
   }
 }

@@ -4,13 +4,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.example.demopg.CustomResponse;
+import com.example.demopg.metadata.Metadata;
+import com.example.demopg.metadata.MetadataRepository;
 
 @Service
 public class ProductService {
-  private final ProductRepository productRepository;
+  private ProductRepository productRepository;
+  private MetadataRepository metadataRepository;
 
-  public ProductService(ProductRepository productRepository) {
+  public ProductService(ProductRepository productRepository, MetadataRepository metadataRepository) {
     this.productRepository = productRepository;
+    this.metadataRepository = metadataRepository;
   }
 
   public Iterable<Product> getProducts(String name, String category, String sortBy, String sortDirection) {
@@ -148,58 +152,123 @@ public class ProductService {
     }
   }
 
-  public Product getProduct(Integer id) {
-    return productRepository.findById(id).orElse(null);
+  public CustomResponse<ProductDTO> getProduct(Integer id) {
+    Product product = productRepository.findById(id).orElse(null);
+    if(product == null){
+      return new CustomResponse<ProductDTO>(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found", null);
+      
+    }
+    Metadata metadata = metadataRepository.findByProductId(id).orElse(null);
+    return new CustomResponse<ProductDTO>(HttpStatus.OK, "OK", "Get Product Detail of " + product.getName(), new ProductDTO(product, metadata));
   }
 
-  public CustomResponse<Product> createProduct(Product product) {
-    if (product == null) {
-      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Product can't be empty", null);
+  public CustomResponse<ProductDTO> createProduct(ProductDTO product) {
+    if(product.getMetadata() == null){
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Metadata can't be empty", null);
+    } 
+    if (product.getProduct() == null) {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Product can't be empty", null);
     }
-    if (product.getName() == null || product.getName() == "") {
-      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Name can't be empty", null);
+
+    Product productToCreate = product.getProduct();
+    Metadata metadataToCreate = product.getMetadata();
+
+    if (productToCreate.getName() == null || productToCreate.getName() == "") {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Name can't be empty", null);
     }
-    if (product.getPrice() == null) {
-      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Price can't be empty", null);
+    if (productToCreate.getPrice() == null) {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Price can't be empty", null);
     }
-    if (product.getWeight() == null) {
-      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Weight can't be empty", null);
+    if (productToCreate.getWeight() == null) {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Weight can't be empty", null);
     }
-    if (product.getCategory() == null || product.getCategory() == "") {
-      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Category can't be empty", null);
+    if (productToCreate.getCategory() == null || productToCreate.getCategory() == "") {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Category can't be empty", null);
     }
-    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Product Added", productRepository.save(product));
+
+    Product createdProduct = productRepository.save(productToCreate);
+    metadataToCreate.setProductId(createdProduct.getId());
+    metadataRepository.save(metadataToCreate);
+
+    return new CustomResponse<ProductDTO>(HttpStatus.OK, "OK", "Product Added", product);
   }
 
-  public CustomResponse<Product> updateProduct(Integer id, Product product) {
+  public CustomResponse<ProductDTO> updateProduct(Integer id, ProductDTO productDto) {
+
     Product productToUpdate = productRepository.findById(id).orElse(null);
+    Metadata metadataToUpdate = metadataRepository.findByProductId(id).orElse(null);
+
+    if (productDto.getMetadata() == null) {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Metadata can't be empty", null);
+    }
+    if (productDto.getProduct() == null) {
+      return new CustomResponse<ProductDTO>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Product can't be empty", null);
+    }
+
+    Product productChange = productDto.getProduct();
+    Metadata metadataChange = productDto.getMetadata();
+
     if (productToUpdate == null) {
-      return new CustomResponse<Product>(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found", null);
+      return new CustomResponse<ProductDTO>(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found", null);
     }
-    if (productToUpdate.getName() != null && productToUpdate.getName() != "") {
-      productToUpdate.setName(product.getName());
+
+    if (metadataToUpdate == null) {
+      metadataToUpdate = new Metadata();
+      metadataToUpdate.setProductId(id);
     }
-    if (productToUpdate.getPrice() != null) {
-      productToUpdate.setPrice(product.getPrice());
+
+    if (productChange.getName() != null && productChange.getName() != "") {
+      productToUpdate.setName(productChange.getName());
     }
-    if (productToUpdate.getWeight() != null) {
-      productToUpdate.setWeight(product.getWeight());
+    if (productChange.getPrice() != null) {
+      productToUpdate.setPrice(productChange.getPrice());
     }
-    if (productToUpdate.getImageUrl() != null) {
-      productToUpdate.setImageUrl(product.getImageUrl());
+    if (productChange.getWeight() != null) {
+      productToUpdate.setWeight(productChange.getWeight());
     }
-    if (productToUpdate.getCategory() != null && productToUpdate.getCategory() != "") {
-      productToUpdate.setCategory(product.getCategory());
+    if (productChange.getImageUrl() != null) {
+      productToUpdate.setImageUrl(productChange.getImageUrl());
     }
-    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Get Product Detail", productRepository.save(productToUpdate));
+    if (productChange.getCategory() != null && productChange.getCategory() != "") {
+      productToUpdate.setCategory(productChange.getCategory());
+    }
+
+    if (metadataChange.getIncrement() != null) {
+      metadataToUpdate.setIncrement(metadataChange.getIncrement());
+    }
+    if (metadataChange.getUnit() != null && metadataChange.getUnit() != "") {
+      metadataToUpdate.setUnit(metadataChange.getUnit());
+    }
+    if (metadataChange.getWeight() != null) {
+      metadataToUpdate.setWeight(metadataChange.getWeight());
+    }
+    if (metadataChange.getCalorie() != null) {
+      metadataToUpdate.setCalorie(metadataChange.getCalorie());
+    }
+    if (metadataChange.getProteins() != null) {
+      metadataToUpdate.setProteins(metadataChange.getProteins());
+    }
+    if (metadataChange.getFats() != null) {
+      metadataToUpdate.setFats(metadataChange.getFats());
+    }
+    if (metadataChange.getCarbs() != null) {
+      metadataToUpdate.setCarbs(metadataChange.getCarbs());
+    }
+    
+    Product updatedProduct = productRepository.save(productToUpdate);
+    Metadata updatedMetadata = metadataRepository.save(metadataToUpdate);
+
+    return new CustomResponse<ProductDTO>(HttpStatus.OK, "OK", "Get Product Detail", new ProductDTO(updatedProduct, updatedMetadata));
   }
 
-  public Product deleteProduct(Integer id) {
+  public CustomResponse<Product> deleteProduct(Integer id) {
     Product productToRemove = productRepository.findById(id).orElse(null);
     if (productToRemove != null) {
       productRepository.deleteById(id);
+    }else{
+      return new CustomResponse<Product>(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product Not Found", null);
     }
-    return productToRemove;
+    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Product Deleted", productToRemove);
   }
 
   public String deleteAllProducts() {
