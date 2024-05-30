@@ -1,6 +1,9 @@
 package com.example.demopg.product;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import com.example.demopg.CustomResponse;
 
 @Service
 public class ProductService {
@@ -11,6 +14,12 @@ public class ProductService {
   }
 
   public Iterable<Product> getProducts(String name, String category, String sortBy, String sortDirection) {
+    if(sortBy == null) {
+      sortBy = "";
+    }
+    if(sortDirection == null) {
+      sortDirection = "";
+    }
     if(name != null && category != null) {
       if(sortBy.equals("name")){
         if(sortDirection.equals("desc")){
@@ -143,14 +152,29 @@ public class ProductService {
     return productRepository.findById(id).orElse(null);
   }
 
-  public Product createProduct(Product product) {
-    return productRepository.save(product);
+  public CustomResponse<Product> createProduct(Product product) {
+    if (product == null) {
+      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Product can't be empty", null);
+    }
+    if (product.getName() == null || product.getName() == "") {
+      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Name can't be empty", null);
+    }
+    if (product.getPrice() == null) {
+      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Price can't be empty", null);
+    }
+    if (product.getWeight() == null) {
+      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Weight can't be empty", null);
+    }
+    if (product.getCategory() == null || product.getCategory() == "") {
+      return new CustomResponse<Product>(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Category can't be empty", null);
+    }
+    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Product Added", productRepository.save(product));
   }
 
-  public Product updateProduct(Integer id, Product product) {
+  public CustomResponse<Product> updateProduct(Integer id, Product product) {
     Product productToUpdate = productRepository.findById(id).orElse(null);
     if (productToUpdate == null) {
-      return null;
+      return new CustomResponse<Product>(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found", null);
     }
     if (productToUpdate.getName() != null && productToUpdate.getName() != "") {
       productToUpdate.setName(product.getName());
@@ -167,7 +191,7 @@ public class ProductService {
     if (productToUpdate.getCategory() != null && productToUpdate.getCategory() != "") {
       productToUpdate.setCategory(product.getCategory());
     }
-    return productRepository.save(productToUpdate);
+    return new CustomResponse<Product>(HttpStatus.OK, "OK", "Get Product Detail", productRepository.save(productToUpdate));
   }
 
   public Product deleteProduct(Integer id) {

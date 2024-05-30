@@ -22,7 +22,6 @@ public class Cart {
   private Integer productId;
 
   @NotNull(message="Quantity is required")
-  @Positive(message = "Quantity must be more than 0")
   @Column(name = "quantity", nullable = false)
   private Integer quantity;
 }

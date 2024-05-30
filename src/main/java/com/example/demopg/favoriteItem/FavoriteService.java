@@ -4,10 +4,10 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
+import com.example.demopg.CustomResponse;
+import com.example.demopg.product.Product;
 import com.example.demopg.product.ProductRepository;
 import com.example.demopg.user.User;
 import com.example.demopg.user.UserRepository;
@@ -23,31 +23,47 @@ public class FavoriteService {
   @Autowired
   UserRepository userRepository;
 
-  public ResponseEntity<?> getUserFavorite(Integer userId){
-    checkUser(userId);
+  public CustomResponse<Iterable<Favorite>> getUserFavorite(Integer userId){
+    if(!checkUser(userId)){
+      return new CustomResponse<Iterable<Favorite>>(HttpStatus.NOT_FOUND, "NOT_FOUND", "User not found", null);
+    }
     Iterable<Favorite> userFavorite = favoriteRepository.findByUserId(userId);
     if(userFavorite.iterator().hasNext()){
-      return ResponseEntity.status(HttpStatus.OK).body(userFavorite);
+      return new CustomResponse<Iterable<Favorite>>(HttpStatus.OK, "OK", "Get User Favorite Products", userFavorite);
     }
-    return ResponseEntity.status(HttpStatus.OK).body("user doesn't have favorite");
+    return new CustomResponse<Iterable<Favorite>>(HttpStatus.NOT_FOUND, "NOT_FOUND", "user doesn't have favorite", null);
   }
 
-  public Favorite changeFavorite(Favorite favorite){
+  public CustomResponse<Favorite> changeFavorite(Favorite favorite){
     Optional<Favorite> checkFavorite = favoriteRepository.findByProductId(favorite.getProductId());
     
-    checkUser(favorite.getUserId());
+    if(!checkProduct(favorite.getProductId())){
+      return new CustomResponse<Favorite>(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found", null);
+    }
+    if(!checkUser(favorite.getUserId())){
+      return new CustomResponse<Favorite>(HttpStatus.NOT_FOUND, "NOT_FOUND", "User not found", null);
+    }
     if(!checkFavorite.isPresent()){
-      return favoriteRepository.save(favorite);
+      return new CustomResponse<Favorite>(HttpStatus.OK, "OK", "Added to Favorite", favoriteRepository.save(favorite));
     }
     Favorite favoriteToRemove = checkFavorite.get();
     favoriteRepository.deleteById(favoriteToRemove.getId());
-    return favoriteToRemove;
+    return new CustomResponse<Favorite>(HttpStatus.OK, "OK", "Removed from Favorite", favoriteToRemove);
   }
 
-  private void checkUser(Integer userId){
+  private boolean checkUser(Integer userId){
     Optional<User> checkUser = userRepository.findById(userId);
-    if(!checkUser.isPresent()){
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    if(checkUser.isEmpty()){
+      return false;
     }
+    return true;
+  }
+
+  private boolean checkProduct(Integer productId){
+    Optional<Product> checkProduct = productRepository.findById(productId);
+    if(checkProduct.isEmpty()){
+      return false;
+    }
+    return true;
   }
 }

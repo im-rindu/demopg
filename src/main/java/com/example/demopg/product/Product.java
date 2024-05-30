@@ -16,11 +16,9 @@ public class Product {
   @GeneratedValue
   private Integer id;
   
-  @NotBlank(message="Name is required")
   @Column(name = "name", nullable = false)
   private String name;
 
-  @NotNull(message="Price is required")
   @Column(name = "price", nullable = false)
   @PositiveOrZero(message = "Price must be zero or more")
   private Double price;
@@ -33,6 +31,5 @@ public class Product {
   private String imageUrl;
 
   @Column(name = "category", nullable = false)
-  @NotBlank(message = "Category is required")
   private String category;
 }

@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demopg.CustomResponse;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -22,12 +24,14 @@ public class FavoriteController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<?> getUserFavorite(@PathVariable Integer id){
-    return favoriteService.getUserFavorite(id);
+  public ResponseEntity<CustomResponse<Iterable<Favorite>>> getUserFavorite(@PathVariable Integer id){
+    CustomResponse<Iterable<Favorite>> response = favoriteService.getUserFavorite(id);
+    return response.toResponseEntity();
   }
 
   @PostMapping("/toggle")
-  public Favorite setFavorite(@Valid @RequestBody Favorite favorite ){
-    return favoriteService.changeFavorite(favorite);
+  public ResponseEntity<CustomResponse<Favorite>> setFavorite(@Valid @RequestBody Favorite favorite ){
+    CustomResponse<Favorite> response = favoriteService.changeFavorite(favorite);
+    return response.toResponseEntity();
   }
 }

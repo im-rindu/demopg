@@ -1,9 +1,13 @@
 package com.example.demopg.cart;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.example.demopg.CustomResponse;
 
 import jakarta.validation.Valid;
 
@@ -26,27 +30,28 @@ public class CartController {
   }
 
   @GetMapping
-  public ResponseEntity<?> getCartItems() {
-    return cartService.getCartItem();
+  public ResponseEntity<?> getCartItem() { 
+    return cartService.getCartItem().toResponseEntity();
   }
 
+
   @PostMapping
-  public Cart addToCart(@Valid @RequestBody Cart cart) {
-    return cartService.addToCart(cart);
+  public ResponseEntity<?> addToCart(@Valid @RequestBody Cart cart) {
+    return cartService.addToCart(cart).toResponseEntity();
   }
 
   @PutMapping("/{id}")
-  public Cart editItemQuantity(@PathVariable Integer id, @Valid @RequestBody Cart cart){
-    return cartService.updateCartItem(id, cart);
+  public ResponseEntity<?> editItemQuantity(@PathVariable Integer id,@RequestParam(name="quantity", required = false) Integer quantity ){
+    return cartService.updateCartItem(id, quantity).toResponseEntity();
   }
   
   @DeleteMapping("/{id}")
-  public Cart removeItem(@PathVariable Integer id){
-    return cartService.removeItemFromCart(id);
+  public ResponseEntity<CustomResponse<Cart>> removeItem(@PathVariable Integer id, @RequestParam(name="quantity", required = false) Integer quantity ){
+    return cartService.removeItemFromCart(id, quantity).toResponseEntity();
   }
 
   @DeleteMapping("/clear")
-  public String removeAllItem(){
-    return cartService.removeAllItems();
+  public CustomResponse<String> removeAllItem(){
+    return new CustomResponse<String>(HttpStatus.OK, "OK", "All Product Removed from Cart", cartService.removeAllItems());
   }
 }
